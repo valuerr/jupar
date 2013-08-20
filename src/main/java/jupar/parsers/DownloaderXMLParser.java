@@ -17,6 +17,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+
+import jupar.objects.DownloadURL;
 import jupar.objects.Modes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -29,7 +31,7 @@ import org.xml.sax.helpers.XMLReaderFactory;
  */
 public class DownloaderXMLParser {
 
-    public ArrayList<String> parse(String filename, Modes mode) throws SAXException,
+    public ArrayList<DownloadURL> parse(String filename, Modes mode) throws SAXException,
             FileNotFoundException, IOException, InterruptedException {
         XMLReader reader = XMLReaderFactory.createXMLReader();
         DownloaderXMLParserHandler handler = new DownloaderXMLParserHandler();
@@ -45,7 +47,7 @@ public class DownloaderXMLParser {
             reader.parse(new InputSource(in));
         }
 
-        return handler.getFiles();
+        return handler.getDownloadURLs();
 
     }
 }

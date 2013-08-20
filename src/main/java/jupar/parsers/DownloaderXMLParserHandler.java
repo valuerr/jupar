@@ -13,6 +13,8 @@
 package jupar.parsers;
 
 import java.util.ArrayList;
+
+import jupar.objects.DownloadURL;
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -23,7 +25,9 @@ import org.xml.sax.helpers.DefaultHandler;
 public class DownloaderXMLParserHandler extends DefaultHandler {
 
     private String currentelement = "";
-    private ArrayList<String> files = new ArrayList<String>();
+    private String current_md5 = "";
+
+    private ArrayList<DownloadURL> downloadURLs = new ArrayList<DownloadURL>();
 
     public DownloaderXMLParserHandler() {
         super();
@@ -33,6 +37,12 @@ public class DownloaderXMLParserHandler extends DefaultHandler {
     public void startElement(String uri, String name,
             String qName, Attributes atts) {
         currentelement = qName;
+        if (currentelement.equals("file"))
+            if(atts != null && atts.getLength() == 1) {
+                current_md5 = atts.getValue("md5");
+            } else {
+                current_md5 = "";
+            }
     }
 
     @Override
@@ -43,13 +53,13 @@ public class DownloaderXMLParserHandler extends DefaultHandler {
         }
 
         if (currentelement.equals("file")) {
-            files.add(value);
+            downloadURLs.add(new DownloadURL(value, current_md5));
         }
         currentelement = "";
 
     }
 
-    public ArrayList<String> getFiles() {
-        return files;
+    public ArrayList<DownloadURL> getDownloadURLs() {
+        return downloadURLs;
     }
 }
