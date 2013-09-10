@@ -18,5 +18,5 @@ package jupar.objects;
  */
 public enum Action {
 
-    MOVE, DELETE, EXECUTE,;
+    MOVE, DELETE, EXECUTE, EXECUTE_EXT_UPDIR_UPDATER,;
 }

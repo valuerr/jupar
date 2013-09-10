@@ -1,7 +1,7 @@
 /**
  * Written by Periklis Master_ex Ntanasis <pntanasis@gmail.com>
  * http://masterex.github.com/
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -12,93 +12,91 @@
  */
 package jupar;
 
-import jupar.objects.Instruction;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+
+import static jupar.utils.FileUtils.smartCopy;
+
+import java.nio.file.Path;
 import java.util.Iterator;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import jupar.objects.Instruction;
 import jupar.objects.Modes;
 import org.xml.sax.SAXException;
 import jupar.parsers.UpdateXMLParser;
 
 /**
- *
  * @author Periklis Ntanasis
  */
 public class Updater {
 
-    public void update(String instructionsxml, String tmp, Modes mode) throws SAXException,
-            FileNotFoundException, IOException, InterruptedException {
+    private static final Logger logger = LoggerFactory.getLogger(Updater.class);
+    private int skip_first_instructions = 0;
+    private JuparMain juparMainUpdater;
+
+    public void setSkip_first_instructions(int skip_first_instructions) {
+        this.skip_first_instructions = skip_first_instructions;
+    }
+
+    public void setJuparMainUpdater(JuparMain juparMainUpdater) {
+        this.juparMainUpdater = juparMainUpdater;
+    }
+
+    public void update(String instructionsxml, String update_dir, Modes mode) throws SAXException,
+            IOException, InterruptedException {
+        update(instructionsxml, update_dir, "", mode);
+    }
+
+    public void update(String instructionsxml, String update_dir, String home_dir, Modes mode) throws SAXException,
+            IOException, InterruptedException {
+
+        if (!update_dir.isEmpty() && !update_dir.endsWith(File.separator))
+            update_dir += File.separator;
+        if (!home_dir.isEmpty() && !home_dir.endsWith(File.separator))
+            home_dir += File.separator;
 
         UpdateXMLParser parser = new UpdateXMLParser();
-        Iterator iterator = parser.parse(tmp + File.separator + instructionsxml, mode).iterator();
+        Iterator iterator = parser.parse(update_dir + instructionsxml, mode).iterator();
         Instruction instruction;
 
+        int instruction_now = 0;
         while (iterator.hasNext()) {
             instruction = (Instruction) iterator.next();
+
+            ++instruction_now;
+            if (instruction_now <= skip_first_instructions)
+                continue;
+            skip_first_instructions = instruction_now;
+
             switch (instruction.getAction()) {
                 case MOVE:
-                    copy(tmp + File.separator + instruction.getFilename(), instruction.getDestination());
+                    Path src_file = FileSystems.getDefault().getPath(update_dir + instruction.getFilename());
+                    Path dst_file = FileSystems.getDefault().getPath(home_dir + instruction.getDestination());
+                    if (smartCopy(src_file, dst_file))
+                        logger.info("Copy OK: {} --> {}", src_file, dst_file);
                     break;
+
                 case DELETE:
-                    delete(instruction.getDestination());
+                    Files.deleteIfExists(FileSystems.getDefault().getPath(home_dir + instruction.getDestination()));
+                    logger.info("Delete OK: {}", FileSystems.getDefault().getPath(home_dir + instruction.getDestination()));
                     break;
+
                 case EXECUTE:
-                    Runtime.getRuntime().exec("java -jar " + tmp + File.separator + instruction.getFilename());
+                    String[] exec_arr = instruction.getFilename().split(" ");
+                    exec_arr[0] = home_dir + exec_arr[0];
+                    Runtime.getRuntime().exec(exec_arr);
+                    logger.info("Execute OK: {}", home_dir + instruction.getFilename());
                     break;
+
+                case EXECUTE_EXT_UPDIR_UPDATER:
+                    juparMainUpdater.runExtUpdater(skip_first_instructions, instruction.getFilename());
+                    logger.info("Execute ext updater OK: {}", instruction.getFilename());
+                    return;
             }
         }
-
-    }
-    
-    public void update(String instructionsxml, String tmp, String dstdir, Modes mode) throws SAXException,
-            FileNotFoundException, IOException, InterruptedException {
-
-        UpdateXMLParser parser = new UpdateXMLParser();
-        Iterator iterator = parser.parse(tmp + File.separator + instructionsxml, mode).iterator();
-        Instruction instruction;
-
-        while (iterator.hasNext()) {
-            instruction = (Instruction) iterator.next();
-            switch (instruction.getAction()) {
-                case MOVE:
-                    copy(tmp + File.separator + instruction.getFilename(), dstdir+File.separator+instruction.getDestination());
-                    break;
-                case DELETE:
-                    delete(dstdir+File.separator+instruction.getDestination());
-                    break;
-                case EXECUTE:
-                    Runtime.getRuntime().exec("java -jar " + tmp + File.separator + instruction.getFilename());
-                    break;
-            }
-        }
-
-    }
-
-    private void copy(String source, String destination) throws FileNotFoundException, IOException {
-        File srcfile = new File(source);
-        File dstfile = new File(destination);
-
-        InputStream in = new FileInputStream(srcfile);
-        OutputStream out = new FileOutputStream(dstfile);
-
-        byte[] buffer = new byte[512];
-        int length;
-
-        while ((length = in.read(buffer)) > 0) {
-            out.write(buffer, 0, length);
-        }
-
-        in.close();
-        out.close();
-    }
-
-    private void delete(String filename) {
-        File file = new File(filename);
-        file.delete();
     }
 }

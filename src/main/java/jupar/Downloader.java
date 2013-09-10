@@ -13,11 +13,10 @@
 package jupar;
 
 import java.io.*;
-import java.net.MalformedURLException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 
-import static java.nio.file.StandardCopyOption.*;
+import static jupar.utils.FileUtils.smartCopyOrWget;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -25,7 +24,9 @@ import java.util.TreeMap;
 
 import jupar.objects.DownloadURL;
 import jupar.objects.Modes;
-import jupar.utils.Hasher;
+import jupar.utils.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 import jupar.parsers.DownloaderXMLParser;
 
@@ -34,17 +35,25 @@ import jupar.parsers.DownloaderXMLParser;
  */
 public class Downloader {
 
+    private static final Logger logger = LoggerFactory.getLogger(Downloader.class);
     Map<String, Path> md5files = new TreeMap<String, Path>();
 
     public Downloader() {
-        String copyPath = "./";
+        initPartialCopy("./");
+    }
+
+    public Downloader(String home_dir) {
+        initPartialCopy(home_dir);
+    }
+
+    public void initPartialCopy(String copyPath) {
         try {
             Path start = FileSystems.getDefault().getPath(copyPath);
             Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     try {
-                        String md5 = Hasher.md5File(file.toString());
+                        String md5 = FileUtils.md5File(file.toString());
                         md5files.put(md5, file);
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -74,37 +83,15 @@ public class Downloader {
             DownloadURL downloadURL = (DownloadURL) iterator.next();
             md5 = downloadURL.getHash();
             url = new java.net.URL(downloadURL.getFile());
+
             File netfile = new File(url.getFile());
-            String destpath = destinationdir + File.separator + netfile.getName();
+            Path src_file = null;
+            Path dst_file = FileSystems.getDefault().getPath(dir.getAbsolutePath() + File.separator + netfile.getName());
 
-            if (!md5.equals("") && md5files.containsKey(md5)) {
-                try {
-                    Files.copy(md5files.get(md5), FileSystems.getDefault().getPath(destpath), REPLACE_EXISTING);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    wget(url, destpath);
-                }
-            } else {
-                wget(url, destpath);
-            }
+            if (!md5.equals("") && md5files.containsKey(md5))
+                src_file = md5files.get(md5);
+
+            smartCopyOrWget(src_file, dst_file, url);
         }
-    }
-
-    private void wget(java.net.URL url, String destination) throws MalformedURLException, IOException {
-        java.net.URLConnection conn = url.openConnection();
-        java.io.InputStream in = conn.getInputStream();
-
-        File dstfile = new File(destination);
-        OutputStream out = new FileOutputStream(dstfile);
-
-        byte[] buffer = new byte[512];
-        int length;
-
-        while ((length = in.read(buffer)) > 0) {
-            out.write(buffer, 0, length);
-        }
-
-        in.close();
-        out.close();
     }
 }

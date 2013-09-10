@@ -37,6 +37,13 @@ class gen_xml4jupar:
 <?xml version="1.0" encoding="UTF-8"?>
 <update>'''
 
+        if self.opts.get('ext_updater'):
+            content += '''
+    <instruction>
+        <action>EXECUTE_EXT_UPDIR_UPDATER</action>
+        <file>%s</file>
+    </instruction>''' % self.opts['ext_updater']
+
         for absfile, relfile in self.files:
             if path.basename(relfile) != 'update.xml':
                 content += '''
@@ -45,6 +52,12 @@ class gen_xml4jupar:
         <file>%s</file>
         <destination>%s</destination>
     </instruction>''' % (path.basename(relfile), relfile)
+
+        content += '''
+    <instruction>
+        <action>EXECUTE</action>
+        <file>%s</file>
+    </instruction>''' % ("%s --stage=cleanup" % self.opts['ext_updater'])
 
         content += '''
 </update>'''
@@ -119,6 +132,9 @@ class gen_xml4jupar:
             'pkgrel': options.pkgrel or '2',
         }
 
+        if options.ext_updater:
+            self.opts['ext_updater'] = options.ext_updater
+
         self.server_prefix = options.server_prefix or ('file:///%s' % path.abspath(self.source))
 
     def build(self):
@@ -164,5 +180,7 @@ if __name__ == '__main__':
                       help="pkgver",    metavar="pkgrel")
     parser.add_option("-c", "--crc", dest="crc",
                       help="crc", metavar="crc")
+    parser.add_option("-e", "--ext_updater", dest="ext_updater",
+                      help="ext_updater", metavar="ext_updater")
     (options, args) = parser.parse_args()
     gen_xml4jupar(options, args).build()
