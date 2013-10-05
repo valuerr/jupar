@@ -18,9 +18,11 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 import static jupar.utils.FileUtils.smartCopyOrWget;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import jupar.objects.DownloadURL;
 import jupar.objects.Modes;
@@ -37,6 +39,7 @@ public class Downloader {
 
     private static final Logger logger = LoggerFactory.getLogger(Downloader.class);
     Map<String, Path> md5files = new TreeMap<String, Path>();
+    private AtomicInteger progress;
 
     public Downloader() {
         initPartialCopy("./");
@@ -70,7 +73,8 @@ public class Downloader {
             FileNotFoundException, IOException, InterruptedException {
 
         DownloaderXMLParser parser = new DownloaderXMLParser();
-        Iterator iterator = parser.parse(filesxml, mode).iterator();
+        ArrayList<DownloadURL> paresed = parser.parse(filesxml, mode);
+        Iterator iterator = paresed.iterator();
         java.net.URL url;
         String md5;
 
@@ -79,6 +83,9 @@ public class Downloader {
             dir.mkdir();
         }
 
+        int total = paresed.size();
+        int current = 0;
+        setProgress(0, total);
         while (iterator.hasNext()) {
             DownloadURL downloadURL = (DownloadURL) iterator.next();
             md5 = downloadURL.getHash();
@@ -92,6 +99,15 @@ public class Downloader {
                 src_file = md5files.get(md5);
 
             smartCopyOrWget(src_file, dst_file, url);
+            setProgress(++current, total);
         }
+    }
+
+    public void setProgressVar(AtomicInteger progress) {
+        this.progress = progress;
+    }
+
+    private void setProgress(int progress, int total) {
+        this.progress.set(10 + (int) (((double) progress / (double) total) * 60));
     }
 }

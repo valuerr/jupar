@@ -15,6 +15,7 @@ import java.nio.file.FileSystems;
 import java.util.Arrays;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.cli.*;
 
@@ -24,6 +25,12 @@ public class JuparMain {
     private String link, update_dir, home_dir, update_app_name, stage;
     private Release release;
     private int wait_start, skip_first_instructions;
+
+    private static AtomicInteger progress = new AtomicInteger(0);
+
+    public static double getProgress() {
+        return (double) progress.get() / (double) 100.0;
+    }
 
     public int checkNew() {
         /**
@@ -55,6 +62,7 @@ public class JuparMain {
                     "Something went wrong!", ex);
             answer = -1;
         }
+        progress.set(10);
         return answer;
     }
 
@@ -62,6 +70,7 @@ public class JuparMain {
         logger.info("Downloading...");
 
         Downloader dl = new Downloader(home_dir);
+        dl.setProgressVar(progress);
         try {
             dl.download(link + "files.xml", update_dir, Modes.URL);
             return true;
@@ -91,6 +100,7 @@ public class JuparMain {
          */
         try {
             Updater update = new Updater();
+            update.setProgressVar(progress);
             update.setSkip_first_instructions(skip_first_instructions);
             update.setJuparMainUpdater(this);
             update.update("update.xml", update_dir, home_dir, Modes.FILE);
@@ -231,6 +241,7 @@ public class JuparMain {
         updater.waitIfNeed();
         updater.download();
         updater.update();
+        progress.set(100);
     }
 
     public static void fullUpdate() {
@@ -238,11 +249,19 @@ public class JuparMain {
         updater.configureFromManifest();
         updater.download();
         updater.update();
+        progress.set(100);
+    }
+
+    public static boolean checkNewStatic() {
+        JuparMain updater = new JuparMain();
+        updater.configureFromManifest();
+        return new JuparMain().checkNew() == 0;
     }
 
     public static void cleanup() {
         JuparMain updater = new JuparMain();
         updater.configureFromManifest();
         updater.clean();
+        progress.set(100);
     }
 }

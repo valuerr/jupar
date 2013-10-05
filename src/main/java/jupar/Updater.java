@@ -19,7 +19,9 @@ import java.nio.file.Files;
 import static jupar.utils.FileUtils.smartCopy;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +39,7 @@ public class Updater {
     private static final Logger logger = LoggerFactory.getLogger(Updater.class);
     private int skip_first_instructions = 0;
     private JuparMain juparMainUpdater;
+    private AtomicInteger progress;
 
     public void setSkip_first_instructions(int skip_first_instructions) {
         this.skip_first_instructions = skip_first_instructions;
@@ -60,16 +63,21 @@ public class Updater {
             home_dir += File.separator;
 
         UpdateXMLParser parser = new UpdateXMLParser();
-        Iterator iterator = parser.parse(update_dir + instructionsxml, mode).iterator();
+        ArrayList<Instruction> parsed = parser.parse(update_dir + instructionsxml, mode);
+        Iterator iterator = parsed.iterator();
         Instruction instruction;
 
         int instruction_now = 0;
+        int total = parsed.size();
+        setProgress(0, total);
         while (iterator.hasNext()) {
             instruction = (Instruction) iterator.next();
 
             ++instruction_now;
-            if (instruction_now <= skip_first_instructions)
+            if (instruction_now <= skip_first_instructions) {
+                setProgress(instruction_now, total);
                 continue;
+            }
             skip_first_instructions = instruction_now;
 
             switch (instruction.getAction()) {
@@ -97,6 +105,15 @@ public class Updater {
                     logger.info("Execute ext updater OK: {}", instruction.getFilename());
                     return;
             }
+            setProgress(instruction_now, total);
         }
+    }
+
+    public void setProgressVar(AtomicInteger progress) {
+        this.progress = progress;
+    }
+
+    private void setProgress(int progress, int total) {
+        this.progress.set(70 + (int) (((double) progress / (double) total) * 30));
     }
 }
