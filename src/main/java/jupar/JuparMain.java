@@ -255,7 +255,7 @@ public class JuparMain {
     public static boolean checkNewStatic() {
         JuparMain updater = new JuparMain();
         updater.configureFromManifest();
-        return new JuparMain().checkNew() == 0;
+        return updater.checkNew() == 0;
     }
 
     public static void cleanup() {
