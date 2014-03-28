@@ -23,13 +23,21 @@ public class JuparMain {
 
     private static final Logger logger = LoggerFactory.getLogger(JuparMain.class);
     private String link, update_dir, home_dir, update_app_name, stage;
-    private Release release;
+    private static Release current_release, new_release;
     private int wait_start, skip_first_instructions;
 
     private static AtomicInteger progress = new AtomicInteger(0);
 
     public static double getProgress() {
         return (double) progress.get() / (double) 100.0;
+    }
+
+    public static Release getNewReleaseInfo() {
+        return new_release;
+    }
+
+    public static Release getCurrentReleaseInfo() {
+        return current_release;
     }
 
     public int checkNew() {
@@ -40,8 +48,8 @@ public class JuparMain {
 
         ReleaseXMLParser parser = new ReleaseXMLParser();
         try {
-            Release current = parser.parse(link + "latest.xml", Modes.URL);
-            if (current.compareTo(release) > 0) {
+            new_release = parser.parse(link + "latest.xml", Modes.URL);
+            if (new_release.compareTo(current_release) > 0) {
                 logger.info("A new version of this program is available");
                 answer = 0;
             }
@@ -149,9 +157,9 @@ public class JuparMain {
         String pkgrel = cmd.getOptionValue("pkgrel");
 
         if (pkgver != null && pkgrel != null) {
-            release = new Release();
-            release.setpkgver(pkgver);
-            release.setPkgrel(pkgrel);
+            current_release = new Release();
+            current_release.setpkgver(pkgver);
+            current_release.setPkgrel(pkgrel);
         }
 
         if (!cmd.getOptionValue("link").isEmpty())
@@ -182,13 +190,13 @@ public class JuparMain {
     }
 
     public void configureFromManifest() {
-        release = new Release();
+        current_release = new Release();
         try {
             Manifest mf = new Manifest();
             mf.read(Thread.currentThread().getContextClassLoader().getResourceAsStream("META-INF/MANIFEST.MF"));
             Attributes atts = mf.getMainAttributes();
-            release.setpkgver(atts.getValue("pkgver"));
-            release.setPkgrel(atts.getValue("pkgrel"));
+            current_release.setpkgver(atts.getValue("pkgver"));
+            current_release.setPkgrel(atts.getValue("pkgrel"));
             link = atts.getValue("update_url");
             update_app_name = atts.getValue("update_app_name");
         } catch (IOException e) {
@@ -209,6 +217,9 @@ public class JuparMain {
         home_dir = FileSystems.getDefault().getPath(".").toAbsolutePath().toString();
         update_dir = home_dir + File.separator + "tmp";
         skip_first_instructions = 0;
+        current_release = null;
+        new_release = null;
+        configureFromManifest();
     }
 
     public void runExtUpdater(int skip_first_instructions_num, String update_app_name) {
@@ -236,7 +247,6 @@ public class JuparMain {
 
     public static void main(String[] args) throws ParseException {
         JuparMain updater = new JuparMain();
-        updater.configureFromManifest();
         updater.configureFromArgs(args);
         updater.waitIfNeed();
         updater.download();
@@ -246,7 +256,6 @@ public class JuparMain {
 
     public static void fullUpdate() {
         JuparMain updater = new JuparMain();
-        updater.configureFromManifest();
         updater.download();
         updater.update();
         progress.set(100);
@@ -254,13 +263,11 @@ public class JuparMain {
 
     public static boolean checkNewStatic() {
         JuparMain updater = new JuparMain();
-        updater.configureFromManifest();
         return new JuparMain().checkNew() == 0;
     }
 
     public static void cleanup() {
         JuparMain updater = new JuparMain();
-        updater.configureFromManifest();
         updater.clean();
         progress.set(100);
     }
