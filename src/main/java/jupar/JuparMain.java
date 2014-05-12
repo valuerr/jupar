@@ -22,8 +22,9 @@ import org.apache.commons.cli.*;
 public class JuparMain {
 
     private static final Logger logger = LoggerFactory.getLogger(JuparMain.class);
+
     private String link, update_dir, home_dir, update_app_name, stage;
-    private static Release current_release, new_release;
+    private Release current_release, new_release;
     private int wait_start, skip_first_instructions;
 
     private static AtomicInteger progress = new AtomicInteger(0);
@@ -32,12 +33,20 @@ public class JuparMain {
         return (double) progress.get() / (double) 100.0;
     }
 
-    public static Release getNewReleaseInfo() {
+    public Release getNewReleaseInfo() {
+        if (new_release == null)
+            checkNew();
         return new_release;
     }
 
-    public static Release getCurrentReleaseInfo() {
-        return current_release;
+    public Release getCurrentReleaseInfo() { return current_release; }
+
+    private static class JuparSingletonHolder {
+        private final static JuparMain instance = new JuparMain();
+    }
+
+    public static JuparMain getInstance() {
+        return JuparSingletonHolder.instance;
     }
 
     public int checkNew() {
@@ -246,7 +255,7 @@ public class JuparMain {
     }
 
     public static void main(String[] args) throws ParseException {
-        JuparMain updater = new JuparMain();
+        JuparMain updater = getInstance();
         updater.configureFromArgs(args);
         updater.waitIfNeed();
         updater.download();
@@ -255,19 +264,19 @@ public class JuparMain {
     }
 
     public static void fullUpdate() {
-        JuparMain updater = new JuparMain();
+        JuparMain updater = getInstance();
         updater.download();
         updater.update();
         progress.set(100);
     }
 
     public static boolean checkNewStatic() {
-        JuparMain updater = new JuparMain();
+        JuparMain updater = getInstance();
         return new JuparMain().checkNew() == 0;
     }
 
     public static void cleanup() {
-        JuparMain updater = new JuparMain();
+        JuparMain updater = getInstance();
         updater.clean();
         progress.set(100);
     }
