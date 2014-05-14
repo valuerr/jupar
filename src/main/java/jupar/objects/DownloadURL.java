@@ -20,13 +20,15 @@ public class DownloadURL {
 
     private String hash;
     private String file;
+    private String path;
 
     public DownloadURL() {
     }
 
-    public DownloadURL(String file, String hash) {
+    public DownloadURL(String file, String hash, String path) {
         this.file = file;
         this.hash = hash;
+        this.path = path;
     }
 
     public String getHash() {
@@ -36,9 +38,15 @@ public class DownloadURL {
     public String getFile() {
         return file;
     }
+    public String getPath() {
+        return path;
+    }
 
     public void setFile(String file) {
         this.file = file;
+    }
+    public void setPath(String path) {
+        this.path = path;
     }
 
     public void setHash(String hash) {

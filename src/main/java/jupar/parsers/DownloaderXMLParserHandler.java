@@ -26,6 +26,7 @@ public class DownloaderXMLParserHandler extends DefaultHandler {
 
     private String currentelement = "";
     private String current_md5 = "";
+    private String current_path = "";
 
     private ArrayList<DownloadURL> downloadURLs = new ArrayList<DownloadURL>();
 
@@ -38,10 +39,11 @@ public class DownloaderXMLParserHandler extends DefaultHandler {
             String qName, Attributes atts) {
         currentelement = qName;
         if (currentelement.equals("file"))
-            if(atts != null && atts.getLength() == 1) {
+            if(atts != null && atts.getLength() > 0) {
                 current_md5 = atts.getValue("md5");
-            } else {
-                current_md5 = "";
+                current_path = atts.getValue("path");
+                if (current_md5 == null) current_md5 = "";
+                if (current_path == null) current_path = "";
             }
     }
 
@@ -53,7 +55,7 @@ public class DownloaderXMLParserHandler extends DefaultHandler {
         }
 
         if (currentelement.equals("file")) {
-            downloadURLs.add(new DownloadURL(value, current_md5));
+            downloadURLs.add(new DownloadURL(value, current_md5, current_path));
         }
         currentelement = "";
 

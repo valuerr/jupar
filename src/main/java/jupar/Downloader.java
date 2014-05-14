@@ -93,7 +93,7 @@ public class Downloader {
 
             File netfile = new File(url.getFile());
             Path src_file = null;
-            Path dst_file = FileSystems.getDefault().getPath(dir.getAbsolutePath() + File.separator + netfile.getName());
+            Path dst_file = FileSystems.getDefault().getPath(dir.getAbsolutePath() + File.separator + downloadURL.getPath());
 
             if (!md5.equals("") && md5files.containsKey(md5))
                 src_file = md5files.get(md5);

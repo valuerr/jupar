@@ -4,6 +4,7 @@ package jupar;
 import jupar.objects.Modes;
 import jupar.objects.Release;
 import jupar.parsers.ReleaseXMLParser;
+import jupar.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
@@ -47,6 +48,10 @@ public class JuparMain {
 
     public static JuparMain getInstance() {
         return JuparSingletonHolder.instance;
+    }
+
+    public void setUpdateURL(String update_url) {
+        link = update_url;
     }
 
     public int checkNew() {
@@ -140,10 +145,11 @@ public class JuparMain {
          */
         File tmp = new File(update_dir);
         if (tmp.exists()) {
-            for (File file : tmp.listFiles()) {
-                file.delete();
+            try {
+                FileUtils.deleteRecursive(tmp);
+            } catch (FileNotFoundException e) {
+                logger.error("cleanup failed!", e);
             }
-            tmp.delete();
         }
     }
 
@@ -272,7 +278,7 @@ public class JuparMain {
 
     public static boolean checkNewStatic() {
         JuparMain updater = getInstance();
-        return new JuparMain().checkNew() == 0;
+        return updater.checkNew() == 0;
     }
 
     public static void cleanup() {
