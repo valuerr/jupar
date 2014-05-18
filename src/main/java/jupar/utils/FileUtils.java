@@ -34,22 +34,23 @@ public class FileUtils {
         return sb.toString();
     }
 
-    public static void copy(String source, String destination) throws FileNotFoundException, IOException {
+    public static void copy(String source, String destination) throws IOException {
         File src_file = new File(source);
         File dst_file = new File(destination);
-
         InputStream in = new FileInputStream(src_file);
         OutputStream out = new FileOutputStream(dst_file);
 
-        byte[] buffer = new byte[512];
-        int length;
+        try {
+            byte[] buffer = new byte[512];
+            int length;
 
-        while ((length = in.read(buffer)) > 0) {
-            out.write(buffer, 0, length);
+            while ((length = in.read(buffer)) > 0) {
+                out.write(buffer, 0, length);
+            }
+        } finally {
+            in.close();
+            out.close();
         }
-
-        in.close();
-        out.close();
     }
 
 
@@ -58,9 +59,15 @@ public class FileUtils {
     }
 
     public static boolean smartCopyOrWget(Path src_file, Path dst_file, URL url) {
-        if (dst_file.equals(src_file)) {
-            return true;
+        try {
+            if (dst_file.equals(src_file)
+                    || dst_file.toString().equals(src_file.toString())
+                    || (dst_file.compareTo(src_file) == 0))
+                return true;
+        } catch (NullPointerException e) {
+
         }
+
 
         try {
             Files.createDirectories(dst_file.getParent());
@@ -74,7 +81,7 @@ public class FileUtils {
                 logger.info("Copy1 OK: {} --> {}", src_file, dst_file);
                 return true;
             } catch (Exception e) {
-                logger.error("Copy1 error: {} --> {}", src_file, dst_file, e);
+                logger.error("Copy1 error: {} --> {} ({})", src_file, dst_file, e.getMessage());
             }
 
             try {
@@ -82,7 +89,7 @@ public class FileUtils {
                 logger.info("Copy2 OK: {} --> {}", src_file, dst_file);
                 return true;
             } catch (Exception e) {
-                logger.error("Copy2 error: {} --> {}", src_file, dst_file, e);
+                logger.error("Copy2 error: {} --> {} ({})", src_file, dst_file, e.getMessage());
             }
         }
 
@@ -92,7 +99,7 @@ public class FileUtils {
                 logger.info("wget OK: {} --> {}", url, dst_file);
                 return true;
             } catch (Exception e) {
-                logger.error("wget error: {} --> {}", url, dst_file, e);
+                logger.error("wget error: {} --> {} ({})", url, dst_file, e.getMessage());
             }
         return false;
     }
@@ -100,15 +107,16 @@ public class FileUtils {
     /**
      * By default File#delete fails for non-empty directories, it works like "rm".
      * We need something a little more brutual - this does the equivalent of "rm -r"
+     *
      * @param path Root File Path
      * @return true iff the file and all sub files/directories have been removed
      * @throws FileNotFoundException
      */
-    public static boolean deleteRecursive(File path) throws FileNotFoundException{
+    public static boolean deleteRecursive(File path) throws FileNotFoundException {
         if (!path.exists()) throw new FileNotFoundException(path.getAbsolutePath());
         boolean ret = true;
-        if (path.isDirectory()){
-            for (File f : path.listFiles()){
+        if (path.isDirectory()) {
+            for (File f : path.listFiles()) {
                 ret = ret && FileUtils.deleteRecursive(f);
             }
         }
@@ -128,14 +136,19 @@ public class FileUtils {
         File dstfile = new File(destination);
         OutputStream out = new FileOutputStream(dstfile);
 
-        byte[] buffer = new byte[512];
-        int length;
+        try {
+            byte[] buffer = new byte[512];
+            int length;
 
-        while ((length = in.read(buffer)) > 0) {
-            out.write(buffer, 0, length);
+            while ((length = in.read(buffer)) > 0) {
+                out.write(buffer, 0, length);
+            }
+
+            in.close();
+            out.close();
+        } finally {
+            in.close();
+            out.close();
         }
-
-        in.close();
-        out.close();
     }
 }

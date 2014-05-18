@@ -45,8 +45,17 @@ public class Downloader {
         initPartialCopy("./");
     }
 
-    public Downloader(String home_dir) {
-        initPartialCopy(home_dir);
+    public Downloader(String... dirs) {
+        for (String dir:dirs)
+            initPartialCopy(dir);
+    }
+
+    private String md5FileSafe(String s) {
+        try {
+            return FileUtils.md5File(s);
+        } catch (Exception e) {
+            return "error";
+        }
     }
 
     public void initPartialCopy(String copyPath) {
@@ -57,7 +66,8 @@ public class Downloader {
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     try {
                         String md5 = FileUtils.md5File(file.toString());
-                        md5files.put(md5, file);
+                        if (!md5files.containsKey(md5))
+                            md5files.put(md5, file);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -65,7 +75,7 @@ public class Downloader {
                 }
             });
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("initPartialCopy::Parse failed; dir: [{}] ()", copyPath, e.getMessage());
         }
     }
 
@@ -97,6 +107,10 @@ public class Downloader {
 
             if (!md5.equals("") && md5files.containsKey(md5))
                 src_file = md5files.get(md5);
+
+            if (!dst_file.equals(src_file))
+                if (md5FileSafe(dst_file.toString()).equals(md5))
+                    src_file = dst_file;
 
             smartCopyOrWget(src_file, dst_file, url);
             setProgress(++current, total);

@@ -91,7 +91,7 @@ public class JuparMain {
     public boolean download() {
         logger.info("Downloading...");
 
-        Downloader dl = new Downloader(home_dir);
+        Downloader dl = new Downloader(update_dir, "./", home_dir);
         dl.setProgressVar(progress);
         try {
             dl.download(link + "files.xml", update_dir, Modes.URL);
@@ -229,12 +229,24 @@ public class JuparMain {
     }
 
     public JuparMain() {
-        home_dir = FileSystems.getDefault().getPath(".").toAbsolutePath().toString();
-        update_dir = home_dir + File.separator + "tmp";
+        home_dir = safeRemDots(FileSystems.getDefault().getPath(".").toAbsolutePath().toString());
+        if (".".equals(home_dir) || "".equals(home_dir))
+            update_dir = "tmp";
+        else update_dir = home_dir + File.separator + "tmp";
+
         skip_first_instructions = 0;
         current_release = null;
         new_release = null;
         configureFromManifest();
+    }
+
+    private String safeRemDots(String s) {
+        s = s.replace("\\.\\", "\\").replace("/./", "/");
+        if (s.endsWith("/.") || s.endsWith("\\."))
+            s = s.substring(0, s.length() - 2);
+        if (s.startsWith("./") || s.startsWith(".\\"))
+            s = s.substring(2);
+        return s;
     }
 
     public void runExtUpdater(int skip_first_instructions_num, String update_app_name) {
@@ -242,8 +254,8 @@ public class JuparMain {
             update_app_name = this.update_app_name;
         if ("updateme".equals(stage))
             return;
-        String home_dir_p = FileSystems.getDefault().getPath(home_dir).toAbsolutePath().toString();
-        String update_dir_p = FileSystems.getDefault().getPath(update_dir).toAbsolutePath().toString();
+        String home_dir_p = safeRemDots(FileSystems.getDefault().getPath(home_dir).toAbsolutePath().toString());
+        String update_dir_p = safeRemDots(FileSystems.getDefault().getPath(update_dir).toAbsolutePath().toString());
         String[] exec_arr = {update_dir_p + File.separator + update_app_name,
                 "--stage=updateme",
                 "--link=" + link,
