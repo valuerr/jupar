@@ -20,6 +20,7 @@ import static jupar.utils.FileUtils.smartCopy;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -86,6 +87,8 @@ public class Updater {
                     Path dst_file = FileSystems.getDefault().getPath(home_dir + instruction.getDestination());
                     if (smartCopy(src_file, dst_file))
                         logger.info("Copy OK: {} --> {}", src_file, dst_file);
+                    else logger.error("Copy error: {} --> {}", src_file, dst_file);
+
                     break;
 
                 case DELETE:
@@ -96,13 +99,20 @@ public class Updater {
                 case EXECUTE:
                     String[] exec_arr = instruction.getFilename().split(" ");
                     exec_arr[0] = home_dir + exec_arr[0];
-                    Runtime.getRuntime().exec(exec_arr);
-                    logger.info("Execute OK: {}", home_dir + instruction.getFilename());
-                    break;
+                    String exec_str = Arrays.asList(exec_arr).toString().replaceAll("^\\[|\\]$", "").replaceAll(",", "");
+                    System.gc();
+                    try {
+                        logger.info("Executing: {}", exec_str);
+                        Runtime.getRuntime().exec(exec_arr);
+                        logger.info("Execute OK");
+                    } catch (IOException e) {
+                        logger.error("Execute error: {}", exec_str, e);
+                    }
+                    return;
 
                 case EXECUTE_EXT_UPDIR_UPDATER:
+                    System.gc();
                     juparMainUpdater.runExtUpdater(skip_first_instructions, instruction.getFilename());
-                    logger.info("Execute ext updater OK: {}", instruction.getFilename());
                     return;
             }
             setProgress(instruction_now, total);

@@ -51,6 +51,13 @@ public class FileUtils {
             in.close();
             out.close();
         }
+
+        if (destination.toLowerCase().endsWith(".exe"))
+            try {
+                dst_file.setExecutable(true);
+            } catch (SecurityException e) {
+                logger.warn("Set executable flag failed: {}", destination);
+            }
     }
 
 
@@ -81,7 +88,7 @@ public class FileUtils {
                 logger.info("Copy1 OK: {} --> {}", src_file, dst_file);
                 return true;
             } catch (Exception e) {
-                logger.error("Copy1 error: {} --> {} ({})", src_file, dst_file, e.getMessage());
+                logger.warn("Copy1 error: {} --> {} ({})", src_file, dst_file, e.getMessage());
             }
 
             try {
@@ -89,7 +96,7 @@ public class FileUtils {
                 logger.info("Copy2 OK: {} --> {}", src_file, dst_file);
                 return true;
             } catch (Exception e) {
-                logger.error("Copy2 error: {} --> {} ({})", src_file, dst_file, e.getMessage());
+                logger.warn("Copy2 error: {} --> {} ({})", src_file, dst_file, e.getMessage());
             }
         }
 
@@ -133,8 +140,8 @@ public class FileUtils {
         java.net.URLConnection conn = url.openConnection();
         java.io.InputStream in = conn.getInputStream();
 
-        File dstfile = new File(destination);
-        OutputStream out = new FileOutputStream(dstfile);
+        File dst_file = new File(destination);
+        OutputStream out = new FileOutputStream(dst_file);
 
         try {
             byte[] buffer = new byte[512];
@@ -143,12 +150,16 @@ public class FileUtils {
             while ((length = in.read(buffer)) > 0) {
                 out.write(buffer, 0, length);
             }
-
-            in.close();
-            out.close();
         } finally {
             in.close();
             out.close();
         }
+
+        if (destination.toLowerCase().endsWith(".exe"))
+            try {
+                dst_file.setExecutable(true);
+            } catch (SecurityException e) {
+                logger.warn("Set executable flag failed: {}", destination);
+            }
     }
 }

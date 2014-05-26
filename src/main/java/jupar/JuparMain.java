@@ -91,7 +91,7 @@ public class JuparMain {
     public boolean download() {
         logger.info("Downloading...");
 
-        Downloader dl = new Downloader(update_dir, "./", home_dir);
+        Downloader dl = new Downloader(update_dir, "./", home_dir, System.getProperty("java.home"));
         dl.setProgressVar(progress);
         try {
             dl.download(link + "files.xml", update_dir, Modes.URL);
@@ -265,10 +265,11 @@ public class JuparMain {
         };
         String exec_str = Arrays.asList(exec_arr).toString().replaceAll("^\\[|\\]$", "").replaceAll(",", "");
         try {
-            logger.info("Executing: " + exec_str);
+            logger.info("Executing ext updater: {}", exec_str);
             Runtime.getRuntime().exec(exec_arr);
+            logger.info("Execute ext updater OK");
         } catch (IOException e) {
-            logger.error("Execute error: {}", exec_str, e);
+            logger.error("Execute ext updater error: {}", exec_str, e);
         }
     }
 

@@ -75,7 +75,7 @@ public class Downloader {
                 }
             });
         } catch (IOException e) {
-            logger.error("initPartialCopy::Parse failed; dir: [{}] ()", copyPath, e.getMessage());
+            logger.warn("initPartialCopy::Parse failed; dir: [{}] ()", copyPath, e.getMessage());
         }
     }
 
